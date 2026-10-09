@@ -8,6 +8,10 @@ git config --global --add safe.directory /source
 cd /source
 git rev-parse HEAD > /logs/head.txt
 if [[ $BACKEND == sycl ]]; then
+  # The repository's migrated DPCT headers use the 2026.1 entangle/chunked_partition API.
+  # basekit:latest currently ships 2025.3.3, which fails both candidate and release baseline.
+  apt-cache policy intel-oneapi-compiler-dpcpp-cpp-2026.1 | tee /logs/compiler-package-policy.txt
+  apt-get install -y -qq --no-install-recommends intel-oneapi-compiler-dpcpp-cpp-2026.1 >> /logs/packages.log 2>&1 || { tail -50 /logs/packages.log; exit 4; }
   if ! find /opt/intel/oneapi -path '*/include/dpct/dpct.hpp' -print -quit | grep -q .; then
     apt-get install -y -qq --no-install-recommends intel-oneapi-dpcpp-ct >> /logs/packages.log 2>&1
   fi
@@ -15,6 +19,7 @@ if [[ $BACKEND == sycl ]]; then
   echo 'Initializing oneAPI environment (force handles preinitialized container env)'
   source /opt/intel/oneapi/setvars.sh --force > /logs/setvars.log 2>&1 || { cat /logs/setvars.log; exit 3; }
   set -u
+  export PATH=/opt/intel/oneapi/compiler/2026.1/bin:$PATH
   icpx --version | tee /logs/compiler.txt
 else
   export PATH=/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
