@@ -12,15 +12,17 @@ if [[ $BACKEND == sycl ]]; then
     apt-get install -y -qq --no-install-recommends intel-oneapi-dpcpp-ct >> /logs/packages.log 2>&1
   fi
   set +u
-  source /opt/intel/oneapi/setvars.sh > /logs/setvars.log 2>&1
+  echo 'Initializing oneAPI environment (force handles preinitialized container env)'
+  source /opt/intel/oneapi/setvars.sh --force > /logs/setvars.log 2>&1 || { cat /logs/setvars.log; exit 3; }
   set -u
-  icpx --version > /logs/compiler.txt
+  icpx --version | tee /logs/compiler.txt
 else
   export PATH=/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
   /opt/rocm/llvm/bin/clang++ --version > /logs/compiler.txt
 fi
 build_one() {
   local source=$1 label=$2
+  echo "Configuring $label for $BACKEND"
   if [[ $BACKEND == sycl ]]; then
     cmake -S "$source/sycl" -B "/tmp/build-$label" -G Ninja \
       -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
@@ -31,6 +33,7 @@ build_one() {
       -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
       > "/logs/$label-config.log" 2>&1 || return $?
   fi
+  echo "Compiling $label for $BACKEND"
   cmake --build "/tmp/build-$label" --target strata -j 2 > "/logs/$label-build.log" 2>&1
 }
 set +e

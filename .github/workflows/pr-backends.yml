@@ -12,14 +12,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: iq4-hip
-            backend: hip
-            head: 04b96551cde2992e86d9e6723bfdea06e16e19c9
-            image: rocm/dev-ubuntu-24.04:7.0.2-complete
-          - name: qsa-hip
-            backend: hip
-            head: 0eedc17c608c99bc583b8c5290cae4bb078ba919
-            image: rocm/dev-ubuntu-24.04:7.0.2-complete
           - name: qsa-sycl
             backend: sycl
             head: 0eedc17c608c99bc583b8c5290cae4bb078ba919
