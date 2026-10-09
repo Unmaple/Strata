@@ -48,6 +48,11 @@ if [[ $candidate != 0 ]]; then
   baseline=$?
   set -e
   printf '%s\n' "$baseline" > /logs/baseline-exit.txt
+  echo "Candidate exit=$candidate baseline exit=$baseline"
+  for label in candidate baseline; do
+    echo "=== $label errors ==="
+    grep -n -E -B 2 -A 3 'error:|CMake Error|FAILED:' "/logs/$label-config.log" "/logs/$label-build.log" || true
+  done
   tail -60 /logs/candidate-config.log
   [[ ! -f /logs/candidate-build.log ]] || tail -80 /logs/candidate-build.log
   exit "$candidate"
