@@ -12,9 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: qsa-sycl
+          - name: iq4-sycl
             backend: sycl
-            head: 0eedc17c608c99bc583b8c5290cae4bb078ba919
+            head: 04177b85408642bd7515db77b4bf23f5dc88d8a8
             image: intel/oneapi-basekit:latest
     name: ${{ matrix.name }}
     steps:
