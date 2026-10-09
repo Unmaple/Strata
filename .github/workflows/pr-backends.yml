@@ -1,0 +1,57 @@
+name: PR backend compile qualification
+on:
+  push:
+    branches: [test/pr-backends-20261009]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: iq4-hip
+            backend: hip
+            head: 04b96551cde2992e86d9e6723bfdea06e16e19c9
+            image: rocm/dev-ubuntu-24.04:7.0.2-complete
+          - name: qsa-hip
+            backend: hip
+            head: 0eedc17c608c99bc583b8c5290cae4bb078ba919
+            image: rocm/dev-ubuntu-24.04:7.0.2-complete
+          - name: qsa-sycl
+            backend: sycl
+            head: 0eedc17c608c99bc583b8c5290cae4bb078ba919
+            image: intel/oneapi-basekit:latest
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.head }}
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pull official toolchain and compile
+        shell: bash
+        env:
+          TOOLCHAIN_IMAGE: ${{ matrix.image }}
+          BACKEND: ${{ matrix.backend }}
+        run: |
+          set -euo pipefail
+          mkdir -p logs
+          docker pull "$TOOLCHAIN_IMAGE"
+          docker image inspect "$TOOLCHAIN_IMAGE" > logs/image.json
+          docker run --rm --entrypoint /bin/bash \
+            -v "$PWD/source:/source" -v "$PWD/logs:/logs" \
+            -v "$PWD/harness/tools/pr_backend_qualification.sh:/qualify.sh:ro" \
+            -e BACKEND="$BACKEND" "$TOOLCHAIN_IMAGE" /qualify.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.name }}-compile-logs
+          path: logs
